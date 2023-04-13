@@ -3,7 +3,7 @@ from scipy.linalg import expm, logm
 from numpy import pi, sin, cos, tan, arccos, matmul
 from numpy.linalg import norm
 # from robotools import Euler_Rodrigues,SE3tose3
-
+from scipy.spatial.transform import Rotation as R
 np.set_printoptions(precision=3, suppress=True)
 deg = pi/180
 
@@ -28,8 +28,10 @@ def upgradeStoE(Screw):
     把运动旋量Screw∈se(3)，转换（升维）成T的矩阵对数E矩阵
     #E=Eu*theta，其中theta为转角，Eu为单位螺旋对应的矩阵对数
     '''
-    theta = norm(Screw[:3])
+
+    theta = norm(Screw[:3])  # 旋转向量的模长，即旋转角度
     screw = Screw.reshape((6, 1))/theta
+
     omg, vel = screw[:3], screw[-3:]
     sMomg = vec2sM(omg)
     bottom = np.array([[0, 0, 0, 0]])
@@ -54,16 +56,33 @@ def degradeEtoS(Ematrix):
     return (screw*theta).reshape(1, 6)
 
 
-s = np.array([0, 0, 1, 3.37, -3.37, 0])
-theta = pi/6
-Twist = s*theta
-E = upgradeStoE(Twist)
-T = expm(E)
-EM = logm(T)
-Screw = degradeEtoS(EM)
+def SE3_Rt(R, t):
+    return np.array([[R[0][0], R[0][1], R[0][2], t[0]], [R[1][0], R[1][1], R[1][2], t[1]], [R[2][0], R[2][1], R[2][2], t[2]], [0, 0, 0, 1]])
 
-print(f"Twist={Twist}")
-print(f"E={E}")
-print(f"T={T}")
-print(f"EM ={EM}")
-print(f"Screw={Screw}")
+
+# s = np.array([0, 0, 1, 3.37, -3.37, 0])
+# theta = pi/6
+# Twist = s*theta
+# E = upgradeStoE(Twist)
+# T = expm(E)
+# EM = logm(T)
+# Screw = degradeEtoS(EM)
+
+# print(f"Twist={Twist}")
+# print(f"E={E}")
+# print(f"T={T}")
+# print(f"EM ={EM}")
+# print(f"Screw={Screw}")
+
+
+# 从欧拉角构造旋转
+r = R.from_euler('z', 90, degrees=True)
+print(r.as_rotvec())
+# 矩阵形式
+R = r.as_matrix()
+t = np.array([0, 0, 0])
+SE3 = SE3_Rt(R, t)
+print(SE3)
+EM2 = logm(SE3)
+Screw2 = degradeEtoS(EM2)
+print(Screw2)
